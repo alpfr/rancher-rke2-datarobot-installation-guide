@@ -35,7 +35,20 @@ In an enterprise-grade AWS deployment, the management plane (Rancher) is separat
 *   **RKE2:** The underlying Kubernetes distribution running directly on the EC2 instances. Hardened by default (aligned with CIS Benchmarks and DISA STIG).
 *   **Rancher:** The management dashboard. It runs as a controller (either on the Bastion or a separate system cluster) to orchestrate cluster deployment, upgrades, and RBAC.
 
+### 1.1 Component Installation Topology & Responsibility Matrix
+
+To clarify how the deployment works, refer to the matrix below showing **where installation commands are executed** versus **where the software actually runs**:
+
+| Component | Description | Run Commands On... | Physically Installed & Executed On... |
+| :--- | :--- | :--- | :--- |
+| **Bastion Host** | The administrative workstation. Acts as your control center. | Your local terminal (using SSH) | Bastion EC2 Instance (runs `kubectl`, `helm`, `docker`, `aws-cli`). |
+| **Rancher Server** | The web dashboard used to orchestrate clusters. | **Bastion Host** (Option A - Docker)<br>or **Bastion Host** (Option B - Helm) | **Bastion Host** (Option A)<br>or **RKE2 Control Plane** (Option B). |
+| **RKE2 Control Plane** | The Kubernetes system orchestrator/scheduler. | **Target Control Plane EC2 Nodes** (manual scripts or Rancher UI commands) | **3x Control Plane EC2 Nodes** (runs K8s API, etcd, scheduler). |
+| **RKE2 Worker Nodes** | The physical hosts for applications. | **Target Worker EC2 Nodes** (agent registration commands) | **3x Worker EC2 Nodes** (runs `kubelet`, `containerd`, and CNI routing). |
+| **DataRobot Application** | The business ML platform (pods, databases, workers). | **Bastion Host** (via `helm upgrade --install`) | **3x RKE2 Worker EC2 Nodes** (dynamically distributed by the K8s scheduler). |
+
 ---
+
 
 ## 2. Infrastructure Prerequisites (AWS)
 
