@@ -78,9 +78,67 @@ For a standard Dev environment, deploy across 6 nodes + 1 Bastion:
 
 ---
 
-## 4. Step-by-Step RKE2 Cluster Provisioning
+## 4. Rancher Server Installation Options
 
-### 4.1 Initialize the Primary Control Plane Node (`cp-1`)
+Depending on your environment, you can install the Rancher control panel in one of two places:
+
+### Option A: Install Rancher on the Bastion Host (Docker-based)
+*Highly recommended for Dev environments to preserve 100% of the RKE2 worker resources for DataRobot.*
+In this model, Rancher runs **outside** Kubernetes as a single Docker container.
+
+#### Installation Steps:
+1. Log into your Bastion host.
+2. Install and enable Docker:
+   ```bash
+   sudo yum update -y
+   sudo amazon-linux-extras install docker -y   # (For Amazon Linux 2)
+   # Or "sudo dnf install docker-ce -y" for newer Rocky/RHEL systems
+   sudo systemctl enable --now docker
+   sudo usermod -aG docker $USER
+   ```
+3. Run the Rancher Server container:
+   ```bash
+   docker run -d --restart=unless-stopped \
+     -p 80:80 -p 443:443 \
+     --privileged \
+     rancher/rancher:latest
+   ```
+4. Access the UI by browsing to `https://<bastion-public-ip>`.
+5. Create a new **Custom RKE2** cluster in the UI, and Rancher will provide a registration script to run on your 6 RKE2 nodes.
+
+### Option B: Install Rancher on the Control Plane (Helm/Kubernetes-based)
+*Standard for high-availability production environments.*
+In this model, you first build the RKE2 cluster manually (Section 5) and then deploy Rancher **inside** it as a set of Kubernetes pods.
+
+#### Installation Steps (Run from the Bastion targeting RKE2):
+1. Configure your RKE2 cluster manually (see Section 5).
+2. Configure `kubectl` on your Bastion host to point to your new cluster.
+3. Install **cert-manager** (required for Rancher TLS certificate generation):
+   ```bash
+   helm repo add jetstack https://charts.jetstack.io
+   helm repo update
+   helm upgrade --install cert-manager jetstack/cert-manager \
+     --namespace cert-manager \
+     --create-namespace \
+     --set installCRDs=true
+   ```
+4. Install **Rancher Server**:
+   ```bash
+   helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+   helm repo update
+   helm upgrade --install rancher rancher-stable/rancher \
+     --namespace cattle-system \
+     --create-namespace \
+     --set hostname="rancher.yourcompany.internal" \
+     --set replicas=3
+   ```
+5. Access the UI via `https://rancher.yourcompany.internal` (ensure your internal DNS maps this hostname to your AWS NLB).
+
+---
+
+## 5. Step-by-Step RKE2 Cluster Provisioning (Manual Setup for Option B)
+
+### 5.1 Initialize the Primary Control Plane Node (`cp-1`)
 1. Create the configuration directory:
    ```bash
    sudo mkdir -p /etc/rancher/rke2/
@@ -103,7 +161,7 @@ For a standard Dev environment, deploy across 6 nodes + 1 Bastion:
    sudo systemctl start rke2-server.service
    ```
 
-### 4.2 Join Nodes 2 & 3 (`cp-2` & `cp-3`) to the Control Plane
+### 5.2 Join Nodes 2 & 3 (`cp-2` & `cp-3`) to the Control Plane
 1. Write the configuration `/etc/rancher/rke2/config.yaml` on `cp-2` and `cp-3`:
    ```yaml
    server: "https://10.0.1.11:9345" # Initializing node IP or NLB DNS
@@ -120,7 +178,7 @@ For a standard Dev environment, deploy across 6 nodes + 1 Bastion:
    sudo systemctl start rke2-server.service
    ```
 
-### 4.3 Join the Worker Nodes
+### 5.3 Join the Worker Nodes
 1. Write `/etc/rancher/rke2/config.yaml` on each worker node:
    ```yaml
    server: "https://rke2-api.dev.internal:9345" # Points to Load Balancer
@@ -139,11 +197,11 @@ For a standard Dev environment, deploy across 6 nodes + 1 Bastion:
 
 ---
 
-## 5. DataRobot Helm Deployment Guide
+## 6. DataRobot Helm Deployment Guide
 
 Once the RKE2 cluster is verified and running, deploy the DataRobot platform from your Bastion host.
 
-### 5.1 Configure Kubernetes Secrets
+### 6.1 Configure Kubernetes Secrets
 Create the required namespace and secret files:
 ```bash
 kubectl create namespace datarobot
@@ -159,7 +217,7 @@ kubectl -n datarobot create secret docker-registry datarobot-regcred \
   --docker-password="<YOUR_DOCKERHUB_PASSWORD>"
 ```
 
-### 5.2 Download the Helm Chart
+### 6.2 Download the Helm Chart
 DataRobot's Helm chart is distributed via OCI on Docker Hub.
 
 1. Authenticate Helm:
@@ -174,7 +232,7 @@ DataRobot's Helm chart is distributed via OCI on Docker Hub.
    tar -zxvf datarobot-11.11.0.tgz
    ```
 
-### 5.3 Configure Helm `values.yaml`
+### 6.3 Configure Helm `values.yaml`
 Modify your `values.yaml` to point to the AWS storage integrations:
 
 ```yaml
@@ -196,7 +254,7 @@ blobStorage:
     region: "us-east-1"
 ```
 
-### 5.4 Install
+### 6.4 Install
 ```bash
 helm upgrade --install datarobot ./datarobot \
   --namespace datarobot \
@@ -205,7 +263,7 @@ helm upgrade --install datarobot ./datarobot \
 
 ---
 
-## 6. Workarounds for Restricted/Air-Gapped Environments
+## 7. Workarounds for Restricted/Air-Gapped Environments
 
 If your EC2 instances cannot access the internet to download the Helm chart, binary files, or container images:
 
