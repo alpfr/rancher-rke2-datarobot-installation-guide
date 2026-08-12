@@ -207,7 +207,7 @@ helm upgrade --install datarobot ./datarobot \
 
 ## 6. Workarounds for Restricted/Air-Gapped Environments
 
-If your EC2 instances cannot access the internet to download the Helm chart or images:
+If your EC2 instances cannot access the internet to download the Helm chart, binary files, or container images:
 
 ### Option A: Local Download & SFTP Transit
 1. Run `helm pull` on an internet-enabled local laptop.
@@ -240,3 +240,55 @@ Host the Helm chart internally in a private S3 bucket:
    helm repo update
    helm upgrade --install datarobot company-charts/datarobot -n datarobot -f my-values.yaml
    ```
+
+### Option D: JFrog Artifactory Repository Mirror (Restricted Outbound curl)
+If you cannot download the RKE2 binaries from GitHub/get.rke2.io, you can host them in an internal JFrog Artifactory Generic Repository and use it as a mirror.
+
+#### 1. Upload RKE2 Binaries to JFrog Generic Repository
+In JFrog Artifactory, create a Generic repository (e.g., `rke2-generic-local`). Upload the following files matching RKE2's structure (available on an internet-connected host from the RKE2 releases page):
+```text
+rke2-generic-local/
+  └── v1.28.4+rke2r1/
+        ├── rke2.linux-amd64.tar.gz
+        └── sha256sum-amd64.txt
+```
+Also upload the `install.sh` installation script (originally retrieved from `https://get.rke2.io`) to `rke2-generic-local/install.sh`.
+
+#### 2. Execute RKE2 Installation on EC2 from JFrog
+On your restricted EC2 instance, execute the installer pointing to your JFrog Artifactory endpoints:
+
+```bash
+# 1. Download the install.sh script from your JFrog instance
+curl -u <jfrog_username>:<jfrog_api_key> \
+  -L "https://artifactory.company.internal/artifactory/rke2-generic-local/install.sh" \
+  -o install.sh
+
+# 2. Execute RKE2 install, forcing the script to download binaries from your JFrog repository
+export INSTALL_RKE2_ARTIFACT_URL="https://artifactory.company.internal/artifactory/rke2-generic-local"
+sudo -E sh install.sh
+```
+
+#### 3. JFrog Artifactory Docker Registry Mirroring for RKE2 & DataRobot Images
+Configure your RKE2 cluster to mirror public container registries (Docker Hub, etc.) to your private JFrog Docker repository:
+
+1. Create `/etc/rancher/rke2/registries.yaml` on all nodes:
+   ```yaml
+   mirrors:
+     docker.io:
+       endpoint:
+         - "https://artifactory.company.internal/artifactory/api/docker/docker-local/"
+     registry-1.docker.io:
+       endpoint:
+         - "https://artifactory.company.internal/artifactory/api/docker/docker-local/"
+   
+   configs:
+     "artifactory.company.internal":
+       auth:
+         username: "<YOUR_JFROG_USERNAME>"
+         password: "<YOUR_JFROG_API_KEY>"
+   ```
+2. Restart the RKE2 service to apply the registry configuration:
+   ```bash
+   sudo systemctl restart rke2-server  # (or rke2-agent on worker nodes)
+   ```
+
