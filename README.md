@@ -4,6 +4,13 @@ This repository contains architectural blueprints, configuration files, and step
 
 ---
 
+## Optional Terraform + Rancher management cluster automation
+
+A separate [Terraform and Bash automation starter](automation/README.md) provisions a **new RKE2 management cluster** on AWS EC2 and installs Rancher after health checks. The linked README contains the exact order of implementation, prerequisites, commands, validation gates, and troubleshooting instructions. This does **not** deploy DataRobot or change the downstream-cluster architecture below.
+
+---
+
+
 ## 1. High-Level Architecture Overview
 
 In an enterprise-grade AWS deployment, the management plane (Rancher) is separated from the application workloads (DataRobot) to minimize the blast radius and ensure operational stability.

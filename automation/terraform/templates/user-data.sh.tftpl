@@ -1,0 +1,9 @@
+#!/bin/bash
+set -Eeuo pipefail
+mkdir -p /opt/rke2-setup
+base64 -d > /opt/rke2-setup/install-rke2.sh <<'RKE2_SCRIPT'
+${bootstrap_script_b64}
+RKE2_SCRIPT
+chmod 0700 /opt/rke2-setup/install-rke2.sh
+export ROLE='${role}' AWS_REGION='${region}' RKE2_VERSION='${version}' SERVER_ENDPOINT='${endpoint}' TOKEN_PARAMETER='${token_parameter}'
+/opt/rke2-setup/install-rke2.sh >> /var/log/rke2-bootstrap.log 2>&1
