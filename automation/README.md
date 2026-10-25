@@ -83,6 +83,10 @@ Transfer `scripts/validate-cluster.sh` and `scripts/diagnose-node.sh` to the app
 
 Review HA networking, backup and restore of etcd and Rancher, network restrictions, and protected remote Terraform state before production.
 
+## Adding control-plane and worker nodes into Rancher
+
+Use the [node-registration guide](rancher-node-registration/README.md). It distinguishes Rancher local management nodes, importing an existing RKE2 cluster, and registering **new** custom Rancher-provisioned control-plane and worker nodes. The included helper must only be run on clean EC2 instances and uses a token generated in the Rancher UI.
+
 ## Directory
 
 ~~~text
