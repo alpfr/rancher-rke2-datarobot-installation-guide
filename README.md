@@ -4,9 +4,9 @@ This repository contains architectural blueprints, configuration files, and step
 
 ---
 
-## Optional Terraform + Rancher management cluster automation
+## Preferred installation: Bash + Rancher (no Terraform)
 
-A separate [Terraform and Bash automation starter](automation/README.md) provisions a **new RKE2 management cluster** on AWS EC2 and installs Rancher after health checks. The linked README contains the exact order of implementation, prerequisites, commands, validation gates, and troubleshooting instructions. This does **not** deploy DataRobot or change the downstream-cluster architecture below.
+Use the [manual deployment guide](manual-deployment/README.md) to provision Rancher/RKE2 on existing or manually created AWS EC2 machines. The guide covers the **required order of implementation**, management-node RKE2 installation, Rancher Helm installation, downstream control-plane/worker registration using Rancher System Agent, and service validation. The earlier Terraform-based example remains available in the `automation/` directory for historical reference only.
 
 ---
 

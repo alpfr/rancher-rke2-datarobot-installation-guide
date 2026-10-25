@@ -6,7 +6,7 @@ This guide explains the missing Rancher-registration step for the AWS architectu
 
 | Cluster being managed | Method | Who installs RKE2? | How nodes appear |
 | --- | --- | --- | --- |
-| Existing management RKE2 cluster from automation/terraform | Nothing else required | EC2 user data (Terraform) | Rancher local cluster |
+| Existing Rancher management RKE2 cluster (manual installation) | Nothing else required | RKE2 Bash installation scripts | Rancher local cluster |
 | Separate, already-running RKE2 cluster | Rancher Cluster Management -> Import Existing | You / Terraform | Import the entire cluster; Rancher discovers all nodes |
 | New downstream RKE2 cluster with fresh EC2 instances | Rancher Cluster Management -> Create -> Custom (RKE2) | Rancher System Agent | Register each fresh node with a role-specific command |
 
@@ -31,13 +31,13 @@ export KUBECONFIG=/etc/rancher/rke2/rke2.yaml  # when executing on an RKE2 serve
 
 ## Path B: New Rancher-provisioned RKE2 custom cluster
 
-**Use clean nodes**, not the management-cluster EC2 nodes provisioned by the existing Terraform project. Those already have RKE2 and belong to the Rancher local cluster.
+**Use clean nodes**, not the management-cluster EC2 nodes running Rancher. Those already have RKE2 and belong to the Rancher local cluster.
 
 ### Step-by-step implementation order
 
 | Step | Location | Action | Gate |
 | --- | --- | --- | --- |
-| 1 | AWS Terraform or console | Provision fresh Linux hosts, 3 control-plane + 2 workers, private IPs, time sync, DNS, SSM/IAM, storage and networking | New instances running, no existing RKE2 |
+| 1 | AWS console / existing EC2 fleet | Provision fresh Linux hosts, 3 control-plane + 2 workers, private IPs, time sync, DNS, SSM/IAM, storage and networking | New instances running, no existing RKE2 |
 | 2 | Network security | Allow node outbound 443 to Rancher; RKE2 registration 9345 and API 6443; etcd peer 2379/2380; CNI-specific overlay, kubelet 10250 | All needed connectivity verified |
 | 3 | Rancher UI | Cluster Management -> Create -> Custom -> RKE2; choose supported Kubernetes version; configure cluster | Registration page displayed |
 | 4 | Rancher UI | Select etcd + Control Plane (no worker) on Registration screen, copy *this cluster's* command | Correct role and server CA |
