@@ -1,0 +1,26 @@
+# Replace placeholders with actual IDs for your account and region.
+# Hosted Zone / Route 53 is NOT required here.
+aws_region  = "us-east-1"
+project     = "rancher-rke2"
+environment = "dev"
+vpc_id      = "vpc-REPLACE"
+private_subnet_ids = [
+  "subnet-REPLACE-A",
+  "subnet-REPLACE-B",
+  "subnet-REPLACE-C",
+]
+
+# Uses SSM's Amazon Linux 2023 x86_64 AMI if null.
+ami_id = null
+management_instance_type = "m6i.xlarge"
+downstream_control_plane_instance_type = "m6i.xlarge"
+downstream_worker_instance_type = "m5.4xlarge"
+downstream_worker_count = 2
+management_root_volume_gb = 100
+downstream_control_plane_root_volume_gb = 100
+downstream_worker_root_volume_gb = 200
+
+# Restrict these to known, trusted client/LB CIDRs. Empty = no ingress beyond peer SG.
+management_ingress_cidrs = []
+management_api_cidrs     = []
+downstream_api_cidrs     = []

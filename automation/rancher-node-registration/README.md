@@ -37,7 +37,7 @@ export KUBECONFIG=/etc/rancher/rke2/rke2.yaml  # when executing on an RKE2 serve
 
 | Step | Location | Action | Gate |
 | --- | --- | --- | --- |
-| 1 | AWS console / existing EC2 fleet | Provision fresh Linux hosts, 3 control-plane + 2 workers, private IPs, time sync, DNS, SSM/IAM, storage and networking | New instances running, no existing RKE2 |
+| 1 | EC2-only Terraform / existing EC2 fleet | Provision fresh Linux hosts, 3 control-plane + 2 workers, private IPs, time sync, DNS, SSM/IAM, storage and networking | New instances running, no existing RKE2 |
 | 2 | Network security | Allow node outbound 443 to Rancher; RKE2 registration 9345 and API 6443; etcd peer 2379/2380; CNI-specific overlay, kubelet 10250 | All needed connectivity verified |
 | 3 | Rancher UI | Cluster Management -> Create -> Custom -> RKE2; choose supported Kubernetes version; configure cluster | Registration page displayed |
 | 4 | Rancher UI | Select etcd + Control Plane (no worker) on Registration screen, copy *this cluster's* command | Correct role and server CA |

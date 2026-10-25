@@ -1,12 +1,12 @@
-# Rancher and RKE2 installation without Terraform
+# Rancher and RKE2 software installation after Terraform EC2 provisioning
 
-**Preferred workflow:** manually provision AWS EC2 Linux instances (or use your existing fleet), install a **separate Rancher management cluster** with RKE2 shell scripts, install Rancher via Helm, and use **Rancher's own Custom RKE2 provisioning** to register the DataRobot downstream cluster. **Terraform is not required.**
+**Preferred workflow:** provision only AWS EC2 infrastructure using [EC2-only Terraform](../ec2-provisioning/README.md) (or use existing EC2 hosts), install a **separate Rancher management cluster** using RKE2 shell scripts, install Rancher via Helm, and use Rancher's Custom RKE2 provisioning to register the downstream DataRobot nodes. Terraform does **not** install RKE2 or Rancher.
 
 ## Architecture and implementation order
 
 | Phase | Target | Installation action | Gate |
 |---|---|---|---|
-| 1 | AWS EC2 | Provision 3 management RKE2 control-plane hosts, a stable **private** TCP NLB for ports 9345/6443, and a **public** ingress load balancer and Rancher DNS | Instances, routes, security groups, SSM/SSH access and TLS DNS reachable |
+| 1 | AWS EC2 | Provision 3 management RKE2 control-plane hosts using EC2-only Terraform, a stable **private** TCP NLB for ports 9345/6443, and a **public** ingress load balancer and Rancher DNS | Instances, routes, security groups, SSM/SSH access and TLS DNS reachable |
 | 2 | Management cp-01 | Execute `scripts/install-management-rke2.sh init-server` | rke2-server running; join token available |
 | 3 | Management cp-02/03 | Copy join token securely; run `scripts/install-management-rke2.sh join-server` | Three management control-plane nodes Ready |
 | 4 | Management cluster | Configure supported ingress controller and route external LB 80/443 to ingress; verify ingress and DNS | `kubectl get ingressclass`, LB health and DNS checks pass |
@@ -94,4 +94,4 @@ Use `rke2-server` on management servers and `rancher-system-agent` on custom-pro
 
 ## Legacy material
 
-The historical [Terraform automation](../automation/README.md) remains in GitHub for reference, but **is not part of this recommended installation path**.
+The [EC2-only Terraform module](../ec2-provisioning/README.md) is the recommended AWS provisioning path. The older [all-in-one Terraform automation](../automation/README.md) remains in GitHub for reference, but is **not part of this preferred installation path**.
